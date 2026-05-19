@@ -49,8 +49,8 @@ spec/
   screens/
     inventory.md
     sitemap.md
-    map-workspace.md       (one file per screen)
-    mob-movement.md
+    home-page.md       (one file per screen)
+    claim-page.md
 
   data/
     states.md
