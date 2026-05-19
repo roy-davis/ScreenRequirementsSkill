@@ -6,7 +6,7 @@ A Claude Code skill that turns a product idea into structured specification arti
 
 ## What it does
 
-Product Spec Builder gives Claude Code a set of `spec.*` commands that walk you from a raw idea through personas, journeys, flows, and screen specifications — producing a folder of markdown files that a UI generation agent can work from.
+This skill gives Claude Code a set of `spec.*` commands that walk you from a raw idea through personas, journeys, flows, and screen specifications — producing a folder of markdown files that a UI generation agent can work from.
 
 Each command does one job, pauses for review, and stops. You stay in control of every step.
 
