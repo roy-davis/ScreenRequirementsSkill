@@ -1,3 +1,5 @@
+# Screen Requirements Skill
+
 A Claude Code skill that turns a product idea into structured specification artifacts for agentic prototyping. Run one command at a time, or sprint through the whole chain in five steps. Hand off directly to UI generation tools like v0, Lovable, Bolt, Claude Design, or Google Stitch.
 
 ---
@@ -54,39 +56,6 @@ spec/
     states.md
     requirements.md
 ```
-
----
-
-## Installation
-
-**1. Download and install the skill**
-
-```bash
-# Clone or download this repo
-git clone https://github.com/your-username/product-spec-builder.git
-
-# Copy the skill to your Codex skills folder
-mkdir -p ~/.codex/skills/product-spec-builder
-cp product-spec-builder/SKILL.md ~/.codex/skills/product-spec-builder/SKILL.md
-```
-
-**2. Add an AGENTS.md to your project**
-
-In your project root, create an `AGENTS.md` file:
-
-```markdown
-Use the skill at ~/.codex/skills/product-spec-builder/SKILL.md
-
-All spec.* commands are available. Outputs go into ./spec/
-```
-
-Claude Code reads `AGENTS.md` automatically at session start — no loading command needed.
-
-**3. Start a new Claude Code session**
-
-Open your project in Claude Code. The `spec.*` commands are now available.
-
----
 
 ## Commands
 
