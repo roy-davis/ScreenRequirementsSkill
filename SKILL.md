@@ -31,8 +31,14 @@ These rules apply to every command without exception:
   design.md
   actions.md
   prepare-brief.md
+  build-brief.md               optional alias/output for prototype build brief
   readiness-review.md
   patterns.md          optional — add after first screens are generated
+
+  /ui-agent/                   optional — compiled UI generation handoff
+    README.md                  global product, design, navigation, and mock data context
+    page-state-design-links.csv
+    [screen-id]-[screen-name].md
 
   /personas/
     [archetype-name].md          one file per persona
@@ -51,6 +57,7 @@ These rules apply to every command without exception:
   /screens/
     inventory.md
     contracts.md
+    page-state-design-links.csv
     [screen-name].md     one file per screen, named by slug
                          e.g. map-workspace.md, mob-movement.md
 
@@ -109,8 +116,9 @@ Product Spec Builder — commands
   spec.states    Workflow state model — run before screens, informs state rendering
   spec.design    Design system — run after flows and states; light or full depth
   spec.map       Screen inventory and sitemap — all screens, connections, entry points
-  spec.screens   Screen specifications — one file per screen, decisions embedded
+  spec.screens   Screen specifications — one file per screen, decisions embedded, plus Figma link CSV
   spec.prepare   Generation brief — packages spec for v0, Lovable, Bolt, Claude Design, Stitch
+  spec.ui        UI-agent handoff — compiles screen rendering contracts into ./spec/ui-agent/
   spec.generate  Single-screen generation prompt — packages design, screen, and brief into one paste
   spec.change    Ingest a change or new feature, analyse impact, update affected artifacts
 
@@ -121,7 +129,7 @@ Product Spec Builder — commands
   spec.review    Readiness review — scores, gaps, traceability check
 
 Recommended prototype path:
-  spec.brief → spec.personas → spec.journeys → spec.flows → spec.states → spec.design → spec.map → spec.screens → spec.prepare
+  spec.brief → spec.personas → spec.journeys → spec.flows → spec.states → spec.design → spec.map → spec.screens → spec.prepare → spec.ui
 
 Outputs go into ./spec/
 Run any command standalone or pass input inline:
@@ -171,12 +179,14 @@ Output format:
   Screens
   spec/screens/inventory.md        ✗  missing
   spec/screens/[screen-name].md    ✗  missing  (one per screen after spec.screens runs)
+  spec/screens/page-state-design-links.csv ✗  missing  (generated after spec.screens runs)
 
   Patterns (optional)
   spec/patterns.md                 ✗  not yet — run spec.patterns after first screens
 
   Prototype handoff
   spec/prepare-brief.md            ✗  missing
+  spec/ui-agent/README.md          ✗  missing  (optional — run spec.ui for UI-agent handoff)
 
   Engineering handoff (optional)
   spec/screens/contracts.md        ✗  missing
@@ -229,10 +239,13 @@ Produce `./spec/data/requirements.md`
 Produce `./spec/actions.md`
 
 ### spec.screens
-Produce one file per screen at `./spec/screens/[screen-name].md`
+Produce one file per screen at `./spec/screens/[screen-name].md` and `./spec/screens/page-state-design-links.csv`
 
 ### spec.prepare
 Produce `./spec/prepare-brief.md`
+
+### spec.ui
+Produce `./spec/ui-agent/README.md`, one UI-agent screen contract per in-scope screen, and `./spec/ui-agent/page-state-design-links.csv`
 
 ### spec.generate
 Produce a single-screen generation prompt for a named screen. Usage: `spec.generate [screen-name]`
@@ -322,7 +335,7 @@ Shortcut commands:
 | spec.sprint step 2 | spec.journeys + spec.flows | Asks for input once, produces journey and flow files |
 | spec.sprint step 3 | spec.states | Produces states model |
 | spec.sprint step 4 | spec.design | Standard spec.design behaviour |
-| spec.sprint step 5 | spec.map + spec.screens + spec.prepare | Produces inventory, sitemap, one file per screen, and prepare brief |
+| spec.sprint step 5 | spec.map + spec.screens + spec.prepare + spec.ui | Produces inventory, sitemap, one file per screen, Figma link CSV, prepare brief, and UI-agent handoff |
 
 Step-by-step commands:
 
@@ -336,8 +349,9 @@ Step-by-step commands:
 | 6 | spec.states | spec/data/states.md | flows/ | Run before screens — informs state rendering |
 | 7 | spec.design | spec/design.md | flows/, data/states.md, brief.md | Run after flows and states |
 | 8 | spec.map | spec/screens/inventory.md + spec/screens/sitemap.md | journeys/, flows/ | |
-| 9 | spec.screens | spec/screens/[screen-name].md (one per screen) | design.md, screens/inventory.md, data/states.md, journeys/, flows/ | Decisions embedded per screen |
+| 9 | spec.screens | spec/screens/[screen-name].md (one per screen) + spec/screens/page-state-design-links.csv | design.md, screens/inventory.md, data/states.md, journeys/, flows/ | Decisions embedded per screen; CSV lists page/state design IDs |
 | 10 | spec.prepare | spec/prepare-brief.md | design.md, screens/inventory.md, screens/*.md | Links to individual screen files |
+| 11 | spec.ui | spec/ui-agent/README.md + spec/ui-agent/[screen-id]-[screen-name].md + spec/ui-agent/page-state-design-links.csv | design.md, value-proposition.md, brief.md, screens/inventory.md, screens/sitemap.md, screens/*.md, screens/page-state-design-links.csv, prepare-brief.md or build-brief.md | Compiled UI-generation handoff package; run after spec.prepare |
 | * | spec.generate | stdout only — no file written | design.md, screens/[name].md, prepare-brief.md, sitemap.md | Run any time after spec.screens |
 | * | spec.change | updates affected files in place | all existing spec files | Run any time — analyses impact before writing |
 | * | spec.patterns | spec/patterns.md | design.md, screens/*.md, user feedback | Optional — skippable, grows from generation feedback |
@@ -348,7 +362,7 @@ Step-by-step commands:
 
 **Recommended prototype path:**
 ```
-spec.brief → spec.personas → spec.journeys → spec.flows → spec.states → spec.design → spec.map → spec.screens → spec.prepare
+spec.brief → spec.personas → spec.journeys → spec.flows → spec.states → spec.design → spec.map → spec.screens → spec.prepare → spec.ui
 ```
 
 **Engineering handoff** (run after prototype is validated):
@@ -1028,6 +1042,13 @@ Collect all screens from each flow's exit states and steps, and each journey's s
 
 **Priority:** Must-have / Should-have / Nice-to-have
 
+**Canonical screen naming:**
+- Name pages as stable app surfaces or Figma frame names, not as purpose/action hybrids.
+- Do not combine a page with its primary action using slash names. For example, use `Home`, not `Home / Resume`; make resume a state such as `Resume available`.
+- Avoid state, task, or mode words in top-level page names when a simpler noun names the surface. Examples: `Library`, not `Library Browsing`; `Sources`, not `Sources Overview`; `SMB Setup`, not `SMB Source Setup`; `Sync Progress`, not `Source Sync Progress`; `Remove Source`, not `Remove Source Confirmation`.
+- Keep nouns that genuinely identify a task-specific surface. Examples: `Provider Authorization`, `Folder Picker`, `Book Detail`, `Now Playing`, `Playback Recovery`, `Source Repair`.
+- Put variants such as empty, loading, blocked, warning, resume-ready, confirmation, and restricted views in the screen state's name rather than the page name.
+
 Ask the user to confirm prototype scope before finalising.
 
 After producing `inventory.md`, also produce `sitemap.md` showing the navigation structure — how screens connect to each other. The sitemap shows canonical screens only, not state variants. Each screen appears once regardless of how many states it has.
@@ -1285,12 +1306,36 @@ Produce one full spec per action. Do not collapse similar actions across pages.
 
 ### spec.screens
 
-**Output:** one file per screen at `./spec/screens/[screen-name].md`
+**Output:** one file per screen at `./spec/screens/[screen-name].md`, plus `./spec/screens/page-state-design-links.csv`
 **File naming:** slugify the screen name from the inventory. Examples: `map-workspace.md`, `mob-movement.md`, `login.md`, `dashboard.md`
 **Reads:** `spec/design.md`, `spec/screens/inventory.md`, `spec/data/states.md`, `spec/journeys/`, `spec/flows/`
 **Also reads if present:** `spec/screens/contracts.md`, `spec/data/requirements.md`, `spec/actions.md`
 
 Generate one file per in-scope screen from the inventory. Do not produce a combined file. After writing all screen files, update `spec/screens/inventory.md` to fill in the File column for each screen.
+
+After all screen files are written, generate `spec/screens/page-state-design-links.csv`. This CSV is a lightweight Figma linking tracker for designers. It lists each canonical page row and each sub-state row, with stable IDs that can be pasted into or matched to Figma frame names.
+
+**CSV naming rules:**
+- Use the canonical screen names from `spec/screens/inventory.md`; do not reintroduce purpose/action hybrid names.
+- Top-level page rows use the screen ID only: `PG01`, `PG02`, etc.
+- Sub-state rows append sequential uppercase letters in the order the states appear in the screen spec: `PG01.A`, `PG01.B`, `PG01.C`.
+- The `Page / State Name` column merges the page and state name in this format: `[Page name] - [State name]`.
+- Page rows use `[Page name] - Page overview`.
+- State names should be human-readable labels, not raw code slugs. Example: `resume-available` becomes `Resume available`.
+- Keep the `Figma Link` cells blank for the user to fill.
+- Include out-of-scope screens as page rows only, with `Item Type` = `Page` and `State Type` = `Out of scope`.
+
+**State Type classification:**
+Use concise labels that help designers filter the CSV. Prefer these labels when applicable: `Default`, `Ready`, `Dashboard`, `List`, `Detail`, `Form`, `Settings`, `Auth`, `Confirmation`, `Empty`, `Loading`, `Error`, `Warning`, `Success`, `Dialog`, `Warning dialog`, `Loading dialog`, `Error dialog`, `Permission`, `Auth pending`, `Auth required`, `Auth error`, `Auth success`, `Progress`, `Progress queued`, `Progress partial`, `Playback`, `Playback paused`, `Repair`, `Completed`, `Out of scope`.
+
+**CSV template:**
+```csv
+Design ID,Page / State Name,Item Type,State Type,Figma Link
+PG01,Home - Page overview,Page,Dashboard,
+PG01.A,Home - Resume available,Sub-state,Ready,
+PG01.B,Home - No sources,Sub-state,Empty,
+PG01.C,Home - Source unavailable,Sub-state,Error,
+```
 
 Each screen spec describes what the screen must do and how it must behave — not which components to use or how to implement it. The implementing agent makes those choices. Specifications that name specific libraries or prescribe exact implementations reduce the agent's ability to make good decisions.
 
@@ -1554,6 +1599,148 @@ For mock data: use realistic specific values. "Jane Okafor, Meridian Publishing,
 
 ---
 
+### spec.ui
+
+**Output:**
+- `./spec/ui-agent/README.md`
+- `./spec/ui-agent/[screen-id]-[screen-name].md` — one file per in-scope screen
+- `./spec/ui-agent/page-state-design-links.csv`
+
+**Reads:** `spec/brief.md`, `spec/value-proposition.md`, `spec/design.md`, `spec/screens/inventory.md`, `spec/screens/sitemap.md`, `spec/screens/page-state-design-links.csv`, `spec/screens/[screen-name].md`, `spec/prepare-brief.md`
+**Also reads if present:** `spec/build-brief.md`, `spec/patterns.md`
+
+Use the active project output root. The examples above use `spec/`; if project instructions say to read/write `outputs/`, write to `outputs/ui-agent/` and read `outputs/build-brief.md` / `outputs/prepare-brief.md`.
+
+This command compiles the canonical product specs into a UI-generation handoff package. It does not replace `spec/screens/*.md`. The canonical screen files remain the source of truth for product reasoning, flow traceability, actions, data, and states. The `ui-agent/` files are optimized for visual generation tools that perform better with a prescriptive screen rendering contract.
+
+**Behaviour:**
+- Does not follow the standard step pattern — no input question, no assumptions prompt, and no stop phrase.
+- Read existing artifacts and write the compiled package immediately.
+- If `build-brief.md` exists, treat it as the primary prototype build brief. If not, use `prepare-brief.md`. If neither exists, continue from design and screen files but include a gap note in `ui-agent/README.md` that global mock data is missing.
+- Include only in-scope screens unless the user explicitly requests out-of-scope screens.
+- Each screen contract must be self-contained enough to paste into a UI agent by itself.
+- Preserve the source screen IDs and canonical screen names. Do not renumber screens.
+- Copy `screens/page-state-design-links.csv` into `ui-agent/page-state-design-links.csv` unchanged, unless the UI-agent package excludes screens; if screens are excluded, remove only the excluded rows.
+
+**Purpose of this package:**
+- Make UI generation more consistent by front-loading visual language, exact states to render, layout regions, mock data, content, negative constraints, and acceptance criteria.
+- Convert broad product-spec sections into a screen-by-screen rendering contract.
+- Avoid changing the canonical screen specs into a format that is noisier for product and engineering handoff.
+
+**README.md structure:**
+```markdown
+# UI Agent Handoff
+
+> File: spec/ui-agent/README.md
+> Generated from spec/design.md, spec/screens/*.md, and spec/prepare-brief.md or spec/build-brief.md.
+
+## Product and Design Context
+[Condensed product purpose, target platform, target users, visual tone, interaction model, accessibility constraints, and global visual rules.]
+
+## Generation Rules
+- [Global do and do-not rules from design.md, patterns.md, and the build brief.]
+
+## Screens
+
+| ID | Screen | UI-agent file | States to render | Notes |
+|---|---|---|---|---|
+| PG01 | | spec/ui-agent/pg01-screen-name.md | | |
+
+## Shared Mock Data
+[Global mock data extracted from build-brief.md or prepare-brief.md.]
+
+## Shared Navigation
+[Core flow and route/transition summary from sitemap.md and build brief.]
+
+## Acceptance
+[Global acceptance criteria for the generated prototype.]
+
+## Source Files
+- spec/design.md
+- spec/screens/inventory.md
+- spec/screens/page-state-design-links.csv
+- spec/prepare-brief.md or spec/build-brief.md
+```
+
+**Per-screen file structure:**
+```markdown
+# [Screen ID] [Screen Name]
+
+PRODUCT AND DESIGN CONTEXT
+
+[Repeat the concise product and design context needed for this screen. Include platform, visual tone, color rules, typography, navigation/input model, and any global negative constraints. Keep this practical, not brand-marketing copy.]
+
+---
+
+SCREEN CONTEXT
+
+[Where this screen sits in the product: entry points, exit points, upstream/downstream screens, and why it matters in the primary flow.]
+
+---
+
+SCREEN SPECIFICATION — [SCREEN ID] [SCREEN NAME]
+
+Screen ID: [PGxx] | [Platform priority, e.g. Mobile: Critical / TV: Critical] | Scope: [In scope]
+
+Primary purpose: [One sentence]
+
+Primary job: [The user job this screen must satisfy]
+
+Content priority:
+- PRIMARY: [must be immediately visible]
+- SECONDARY: [supporting information/actions]
+- TERTIARY: [low-priority controls/status]
+
+STATES TO RENDER — produce all listed states as distinct artboards or frames:
+
+STATE 1 — [STATE NAME]
+[Concrete rendering instructions: layout, content, controls, visual treatment, state-specific data, disabled/hidden actions, and what changes from the default.]
+
+STATE 2 — [STATE NAME]
+[Repeat for every critical variant/sub-state.]
+
+ACTIONS:
+- [Trigger] -> [result / destination / state transition]
+
+DATA:
+[Screen-specific data and whether it is local, cached, real-time, or user input.]
+
+VISUAL INDICATORS:
+- [Indicator]: [meaning]
+
+LAYOUT REGIONS:
+- [Region]: [required content and purpose]
+
+CONTENT:
+- [Element]: [exact copy]
+
+MOCK DATA:
+[Only the mock data needed for this screen, extracted from the build brief and screen file.]
+
+FIDELITY:
+[Lo-fi / Mid-fi / Hi-fi] — [visual completeness expectation and target tool if known.]
+
+ACCEPTANCE CRITERIA:
+- [Verifiable visual/product criterion]
+```
+
+**Compilation rules:**
+- Convert each screen's `States` and `Critical variants` into explicit `STATES TO RENDER` sections. If `page-state-design-links.csv` lists sub-states that are missing from the screen file, include them and mark the missing detail as a gap.
+- Use the build brief for shared mock data, global navigation, prototype fidelity, target tool, core flow, setup flow, edge cases, and global "Do not" constraints.
+- Use the screen file for purpose, job, content priority, actions, data, visual indicators, layout regions, copy, and acceptance criteria.
+- Use `design.md` for platform, visual tone, color, typography, spacing, shape, navigation, input, focus, accessibility, and component constraints.
+- Use `patterns.md` only for patterns that directly affect the screen type. Do not paste the whole pattern library into every screen.
+- Make state instructions visually concrete. Prefer "row background changes to muted surface and Resume is the only enabled row action" over "show running state".
+- Keep implementation details out unless they are explicit user-facing constraints. For example, a UI-agent screen can say "cached items remain visible" but should not mention Room, WorkManager, database IDs, or provider file IDs in user-facing copy.
+- Preserve strong negative constraints from the product context and build brief. These are often what keep generated UI on-brief.
+- Acceptance criteria must be checkable by looking at the generated screen or prototype. Do not include criteria that require backend code, real APIs, analytics, or persistence.
+- Do not include lorem ipsum, placeholder bracket text, or generic examples. Use concrete mock data.
+
+**When to rerun:**
+- Rerun `spec.ui` after `spec.screens`, `spec.prepare`, `spec.change`, or any design/build-brief update that changes visual direction, state coverage, navigation, mock data, or acceptance criteria.
+
+---
+
 ### spec.generate
 
 **Output:** stdout only — no file is written to disk
@@ -1678,6 +1865,7 @@ If the user replies "yes" or "proceed", update files in dependency order:
 6. States (if affected)
 7. Screens — inventory, sitemap, then individual screen files (if affected)
 8. Prepare brief (if affected)
+9. UI-agent handoff package (only if it already exists, or if the user explicitly asks to update it)
 
 If the user adjusts the list (removes or adds files), honour their changes before proceeding.
 
@@ -1718,6 +1906,7 @@ After all updates are complete, print:
 
   Run spec.generate [screen-name] to produce a
   generation prompt for any updated screens.
+  Run spec.ui to rebuild the UI-agent handoff package.
   Run spec.review to check overall readiness.
 ─────────────────────────────────────────────
 ```
@@ -1735,6 +1924,8 @@ After all updates are complete, print:
 **New screen** — if the change requires a new screen, add it to the inventory, update the sitemap, and generate the new screen file. Do not generate a screen spec for screens that are out of scope unless the change explicitly brings them into scope.
 
 **Change affects the prepare brief** — always check whether mock data, the core flow, or the screen list in prepare-brief.md needs updating. This is easy to miss but important for generation quality.
+
+**Change affects the UI-agent handoff** — if `spec/ui-agent/` exists, flag that it must be regenerated or updated after changes to design, screens, page-state links, sitemap, mock data, build brief, or prepare brief. Prefer rerunning `spec.ui` over hand-editing UI-agent files, because they are compiled from canonical artifacts.
 
 **Change introduces a new interaction pattern** — if the change adds a new interaction type, flag in the impact analysis whether patterns.md exists and whether it needs a new entry. Do not create patterns.md if it doesn't exist — suggest the user run spec.patterns instead.
 
@@ -1907,7 +2098,7 @@ No external input needed. Read all files and run the checks below.
 ### spec.sprint
 
 **Output:** All files from the 5-step condensed prototype flow
-**Runs:** spec.brief + spec.personas → spec.journeys + spec.flows → spec.states → spec.design → spec.map + spec.screens + spec.prepare
+**Runs:** spec.brief + spec.personas → spec.journeys + spec.flows → spec.states → spec.design → spec.map + spec.screens + spec.prepare + spec.ui
 
 spec.sprint groups the 10 prototype commands into 5 steps. Each step asks for input once, runs its grouped commands, outputs all files for that step, then pauses for review before continuing. The standard checkpoint pattern applies within each step — validate, draft or complete, list assumptions, ask about gaps — but runs across all commands in the group before pausing.
 
@@ -1944,10 +2135,10 @@ Outputs: `spec/design.md`
 Stop phrase: "Step 4 complete. Reply with corrections or 'accept' to continue to Step 5 — screens and build."
 
 **Step 5 — Screens and handoff**
-Runs: spec.map + spec.screens + spec.prepare
+Runs: spec.map + spec.screens + spec.prepare + spec.ui
 Input question: Do you have an existing screen list, screen specs, or prototype brief? Share a file path, paste content, or say "nothing." Also: which tool are you generating for — v0, Lovable, Bolt, Claude Design, Google Stitch, or other?
-Outputs: `spec/screens/inventory.md`, `spec/screens/sitemap.md`, `spec/screens/[screen-name].md` (one per screen), `spec/prepare-brief.md`
-Stop phrase: "Sprint complete. Your prototype spec is ready in ./spec/ — run spec.prepare to generate the preparation brief, or spec.review for a readiness check."
+Outputs: `spec/screens/inventory.md`, `spec/screens/sitemap.md`, `spec/screens/[screen-name].md` (one per screen), `spec/screens/page-state-design-links.csv`, `spec/prepare-brief.md`, `spec/ui-agent/README.md`, and `spec/ui-agent/[screen-id]-[screen-name].md`
+Stop phrase: "Sprint complete. Your prototype spec is ready in ./spec/. Use ./spec/ui-agent/ for UI generation, or run spec.review for a readiness check."
 
 ---
 
@@ -1962,7 +2153,7 @@ spec.oneshot takes one input — a product idea, PRD, notes, or file — and gen
 - Ask for input once at the very start. Do not pause again until all artifacts are written.
 - Use full personas (not light mode) — a one-shot run needs maximum context for screen generation.
 - Mark every output file with the provisional notice (the standard Step 6 rule applies to all files).
-- Generate artifacts in the correct dependency order: brief → personas → journeys → flows → states → decisions → design → pages → screens → build.
+- Generate artifacts in the correct dependency order: brief → personas → journeys → flows → states → decisions → design → pages → screens → build → UI-agent handoff.
 - After all files are written, print a consolidated list of all assumptions grouped by artifact, followed by all clarification questions grouped by artifact.
 - The clarification questions section should be actionable — each question names the artifact and field, explains why it matters, and suggests a default if the user wants to accept without answering.
 
@@ -1978,7 +2169,9 @@ spec.oneshot takes one input — a product idea, PRD, notes, or file — and gen
 7. `spec/design.md`
 8. `spec/screens/inventory.md`
 9. `spec/screens/[screen-name].md` (one per screen)
-10. `spec/prepare-brief.md`
+10. `spec/screens/page-state-design-links.csv`
+11. `spec/prepare-brief.md`
+12. `spec/ui-agent/README.md` + `spec/ui-agent/[screen-id]-[screen-name].md`
 
 **End of output:**
 Print a summary in this format:
@@ -2014,3 +2207,4 @@ Use the skill at ~/.codex/skills/product-spec-builder/SKILL.md
 
 All spec.* commands are available. Outputs go into ./spec/
 ```
+
